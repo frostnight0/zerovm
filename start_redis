@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if ! docker network inspect zerovm-net >/dev/null 2>&1; then
+    docker network create zerovm-net
+fi
+
+docker rm -f zerovm-ram-redis
+docker run --name zerovm-ram-redis --network zerovm-net -p 127.0.0.1:10000:6379 -d redis

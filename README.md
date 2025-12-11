@@ -1,5 +1,16 @@
 # zerovm
 
+### Usage
+```
+./cpu           - run cpu
+./cpu <comm>    - run rust commands, example, ./cpu cargo add <...>
+./cpu bash      - run rust container
+
+./start_reds    - must be running before you run cpu
+```
+
+
+### Features
 ```
 ====================================
           * vm simulator *   

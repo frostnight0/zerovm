@@ -1,0 +1,12 @@
+#!/bin/bash
+# run v1.1
+
+if [[ "$@" == "" ]]; then
+    docker run -it --rm -e CARGO_HOME=/code/cache --name rust --network zerovm-net -v .:/code -w /code rust:1.91.1-trixie cargo run --bin cpu
+else
+    echo "command: $@"
+    docker run -it --rm -e CARGO_HOME=/code/cache --name rust --network zerovm-net -v .:/code -w /code rust:1.91.1-trixie "$@"
+fi
+
+docker run -it --rm -e CARGO_HOME=/code/cache --name rust --network zerovm-net -v .:/code -w /code rust:1.91.1-trixie chown -R $(id -u):$(id -g) .
+
