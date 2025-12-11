@@ -56,10 +56,10 @@ struct CPU {
 
     // -- internal vars --
     halted: bool,  // Halt Flag
-    opcode: u8,    // Opcode
+    instr:  u8,    // Instruction
     
     // -- debug settings --
-    fetch_debug: bool,   // Enable opcode output
+    fetch_debug: bool,   // Enable instruction output
 
     // -- ram access --
     ram: Ram,
@@ -73,7 +73,7 @@ impl CPU {
 
             // -- internal vars --
             halted: false,
-            opcode: 0x00,
+            instr:  0x00,
             
             // -- debug settings --
             fetch_debug: false,
@@ -88,30 +88,50 @@ impl CPU {
     }
 
     fn fetch(&mut self) {
-        self.opcode = self.ram.read(self.PC);
+        self.instr = self.ram.read(self.PC);
         self.PC += 1;
 
         if self.fetch_debug {
-            println!("{}", format!("opcode: {:02X}", self.opcode).blue());
+            println!("{}", format!("instr: {:02X}", self.instr).blue());
         }
     }
 
     fn execute(&mut self) {
-        if self.opcode == 0x00 {
+        let opcode = self.instr >> 4;
+        let arg = self.instr & 0x0F;  
 
-        } else if self.opcode == 0xF0 {
-            self.halted = true;
+        match opcode {
+            0x0 => {},                              // NOP
 
-        } else {
-            panic!("{}", format!("CPU: Unknown opcode [{}]", self.opcode).red().bold());
+            0x1 => {                                // MOV Rx, imm8
+                let temp = self.ram.read(self.PC);
+                self.PC += 1;
+
+                match arg {
+                    0x0 => self.R0 = temp,          // MOV R0, imm8
+                    0x1 => self.R1 = temp,          // MOV R1, imm8
+                    0x2 => self.R2 = temp,          // MOV R2, imm8
+                    0x3 => self.R3 = temp,          // MOV R3, imm8
+                    _ => panic!("{}", format!("CPU: Unknown arg [{:X}]", arg).red().bold()),
+                }
+            },
+
+            0xF => {
+                self.halted = true;
+            },
+
+            _ => panic!("{}", format!("CPU: Unknown instr [{:02X}]", self.instr).red().bold())
         }
     }
 }
 
 fn preload_ram(ram: &mut Ram) {
     ram.write(0x0000, 0x00);   // NOP
-    ram.write(0x0001, 0x00);   // NOP
-    ram.write(0x0002, 0xF0);   // HALT
+    ram.write(0x0001, 0x10);   // MOV R0, imm8
+    ram.write(0x0002, 0x11);   // 0x11
+    ram.write(0x0003, 0x11);   // MOV R1, imm8
+    ram.write(0x0004, 0x22);   // 0x22
+    ram.write(0x0005, 0xF0);   // HALT
 }
 
 fn main() {

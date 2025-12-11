@@ -26,6 +26,14 @@ CPU:
         R3 (8bit)  - Flags
         PC (16bit) - Program Counter
 
+    Instructions:
+        00  NOP
+        10  MOV R0, imm8
+        11  MOV R1, imm8
+        12  MOV R2, imm8
+        13  MOV R3, imm8
+        F0  HALT
+
 RAM:
     Backend: - redis
     Address: - 16bit
