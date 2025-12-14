@@ -269,22 +269,24 @@ match self.arg {
     }
 }
 
-fn preload_ram(ram: &mut Ram) {
-    ram.write(0x0000, 0x00);   // NOP
-    ram.write(0x0001, 0x10);   // MOV R0, [PC]
-    ram.write(0x0002, 0x55);   // 0x55
-    ram.write(0x0003, 0x72);   // MOV R2, R0
-    ram.write(0x0004, 0x10);   // MOV R0, [PC]
-    ram.write(0x0005, 0x11);   // 0x11
-    ram.write(0x0006, 0x11);   // MOV R1, [PC]
-    ram.write(0x0007, 0x22);   // 0x22
-    ram.write(0x0008, 0x32);   // MOV [R1 R0], R2 | [2211] <= 0x55
-    ram.write(0x0009, 0x23);   // MOV R3, [R1 R0] | R3 <= [2211] 0x55
-    ram.write(0x000A, 0x40);   // ADD R0, R1
-    ram.write(0x000B, 0x43);   // ADD R0, R1
-    ram.write(0x000C, 0x43);   // ADD R0, R1
-    ram.write(0x000D, 0x43);   // ADD R0, R1
-    ram.write(0x000E, 0xF0);   // HALT
+fn preload_ram(ram: &mut Ram) -> std::io::Result<()> {
+    let program_hex = std::fs::read_to_string("program.hex")?;
+    let mut addr: u16 = 0;
+
+    for line in program_hex.lines() {
+        let line_vec: Vec<_> = line.split("#").collect();
+        let line_hex = line_vec[0].trim();
+        let hex_vec: Vec<_> = line_hex.split(" ").collect();
+
+        for hex in hex_vec.iter() {
+            let val  = u8::from_str_radix(&hex, 16).unwrap();
+            println!("hex: [{:04X}]: {:02X}", addr, val);
+            ram.write(addr, val);
+            addr += 1;
+        }
+    }
+
+    Ok(())
 }
 
 fn main() {
