@@ -53,10 +53,7 @@ struct CPU {
     R1: u8,     // General Purpose
     R2: u8,     // General Purpose
     R3: u8,     // General Purpose
-    R4: u8,     // General Purpose
-    R5: u8,     // General Purpose
-    R6: u8,     // General Purpose
-    R7: u8,     // General Purpose
+    SP: u16,    // Stack Pointer
     // -- flags --
     Z: bool,    // Zero
     N: bool,    // Negative
@@ -86,7 +83,7 @@ impl CPU {
         Self {
             PC: 0x0000,
             R0: 0x00, R1: 0x00, R2: 0x00, R3: 0x00,
-            R4: 0x00, R5: 0x00, R6: 0x00, R7: 0x00,
+            SP: 0x0000,
             Z: false, N: false, C: false, V: false,
 
             // -- internal vars --
@@ -130,8 +127,8 @@ impl CPU {
     }
 
     fn print_debug(&self) {
-        println!("PC:[{:04X}], R0:[{:02X}], R1:[{:02X}], R2:[{:02X}], R3:[{:02X}], R4:[{:02X}], R5:[{:02X}], R6:[{:02X}], R7:[{:02X}], SR:[{}]",
-            self.PC, self.R0, self.R1, self.R2, self.R3, self.R4, self.R5, self.R6, self.R7, self.flags_str());
+        println!("PC:[{:04X}], R0:[{:02X}], R1:[{:02X}], R2:[{:02X}], R3:[{:02X}], SP: [{:04X}], SR:[{}]",
+            self.PC, self.R0, self.R1, self.R2, self.R3, self.SP, self.flags_str());
     }
 
     fn fetch(&mut self) {
@@ -195,6 +192,8 @@ impl CPU {
 
             0x2 => {                                    // MOV Rx, [R1 R0]
 match self.arg {
+                    0x0 => self.R0 = self.ram.read((self.R3 as u16) << 4 | self.R2 as u16),     // MOV R0, [R3 R2]
+                    0x1 => self.R1 = self.ram.read((self.R3 as u16) << 4 | self.R2 as u16),     // MOV R1, [R3 R2]
                     0x2 => self.R2 = self.ram.read((self.R1 as u16) << 4 | self.R0 as u16),     // MOV R2, [R1 R0]
                     0x3 => self.R3 = self.ram.read((self.R1 as u16) << 4 | self.R0 as u16),     // MOV R3, [R1 R0]
                     _ => panic!("{}", format!("CPU: Unknown arg [{:X}]", self.arg).red().bold()),
@@ -203,6 +202,8 @@ match self.arg {
 
             0x3 => {                                    // MOV [R1 R0], Rx
                 match self.arg {
+                    0x1 => self.ram.write((self.R3 as u16) << 4 | self.R2 as u16, self.R0),     // MOV [R3 R2], R0
+                    0x2 => self.ram.write((self.R3 as u16) << 4 | self.R2 as u16, self.R1),     // MOV [R3 R2], R1
                     0x2 => self.ram.write((self.R1 as u16) << 4 | self.R0 as u16, self.R2),     // MOV [R1 R0], R2
                     0x3 => self.ram.write((self.R1 as u16) << 4 | self.R0 as u16, self.R3),     // MOV [R1 R0], R3
                     _ => panic!("{}", format!("CPU: Unknown arg [{:X}]", self.arg).red().bold()),
@@ -211,32 +212,36 @@ match self.arg {
 
             0x4 => {                                    // ALU R0, R1
                 match self.arg {
-                    0x0 => self.R0 = self.alu_add(self.R0, self.R2),
-                    0x1 => self.R1 = self.alu_add(self.R1, self.R3),
-                    0x3 => self.R0 = self.alu_adc(self.R0, self.R2),
-                    0x4 => self.R1 = self.alu_adc(self.R1, self.R3),
+                    0x0 => self.R0 = self.alu_add(self.R0, self.R2),    // ADD R0, R2
+                    0x1 => self.R1 = self.alu_add(self.R1, self.R3),    // ADD R1, R3
+                    0x2 => self.R0 = self.alu_adc(self.R0, self.R2),    // ADC R0, R2
+                    0x3 => self.R1 = self.alu_adc(self.R1, self.R3),    // ADC R1, R3
+                    // 0x4                                              // NOT R0
+                    // 0x5                                              // NOT R1
+                    // 0x6                                              // AND R0, R2
+                    // 0x7                                              // AND R1, R3
+                    // 0x8                                              // XOR R0, R2
+                    // 0x9                                              // XOR R1, R3
+                    // 0xA                                              // SHR R0
+                    // 0xB                                              // SHR R1
+                    // 0xC                                              // SHL R0
+                    // 0xD                                              // SHL R1
+                    // 0xE                                              // CMP R0, R2
+                    // 0xF                                              // CMP R1, R3
                     _ => panic!("{}", format!("CPU: Unknown arg [{:X}]", self.arg).red().bold()),
                 }
 
             },
-            0x5 => {},                                  // JMP [R1 R0]
+            0x5 => {},                                  // More math
 
             0x6 => {                                    // MOV R0/R1, Rx
                 match self.arg {
                     0x1 => self.R0 = self.R1,           // MOV R0, R1
                     0x2 => self.R0 = self.R2,           // MOV R0, R2
                     0x3 => self.R0 = self.R3,           // MOV R0, R3
-                    0x4 => self.R0 = self.R4,           // MOV R0, R4
-                    0x5 => self.R0 = self.R5,           // MOV R0, R5
-                    0x6 => self.R0 = self.R6,           // MOV R0, R6
-                    0x7 => self.R0 = self.R7,           // MOV R0, R7
                     0x8 => self.R1 = self.R0,           // MOV R1, R0
                     0xA => self.R1 = self.R2,           // MOV R1, R2
                     0xB => self.R1 = self.R3,           // MOV R1, R3
-                    0xC => self.R1 = self.R4,           // MOV R1, R4
-                    0xD => self.R1 = self.R5,           // MOV R1, R5
-                    0xE => self.R1 = self.R6,           // MOV R1, R6
-                    0xF => self.R1 = self.R7,           // MOV R1, R7
                     _ => panic!("{}", format!("CPU: Unknown arg [{:X}]", self.arg).red().bold()),
                 }
             },
@@ -246,17 +251,9 @@ match self.arg {
                     0x1 => self.R1 = self.R0,           // MOV R1, R0
                     0x2 => self.R2 = self.R0,           // MOV R2, R0
                     0x3 => self.R3 = self.R0,           // MOV R3, R0
-                    0x4 => self.R4 = self.R0,           // MOV R4, R0
-                    0x5 => self.R5 = self.R0,           // MOV R5, R0
-                    0x6 => self.R6 = self.R0,           // MOV R6, R0
-                    0x7 => self.R7 = self.R0,           // MOV R7, R0
                     0x8 => self.R0 = self.R1,           // MOV R0, R1
                     0xA => self.R2 = self.R1,           // MOV R2, R1
                     0xB => self.R3 = self.R1,           // MOV R3, R1
-                    0xC => self.R4 = self.R1,           // MOV R4, R1
-                    0xD => self.R5 = self.R1,           // MOV R5, R1
-                    0xE => self.R6 = self.R1,           // MOV R6, R1
-                    0xF => self.R7 = self.R1,           // MOV R7, R1
                     _ => panic!("{}", format!("CPU: Unknown arg [{:X}]", self.arg).red().bold()),
                 }
             },
