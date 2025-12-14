@@ -105,13 +105,6 @@ CPU:
 
         F0  HALT
 
-        Ideas:
-          1) PC as pair of GPRS
-          2) Rx0 hardwired to zero
-          3) Rx for flags
-          4) No flags
-          5) Stack based CPU
-
 RAM:
     Address: 16bit
     Data:    8bit
@@ -121,4 +114,13 @@ GPU:
 
 Features:
     RAM backend: redis
+```
+
+```
+Ideas:
+  1) PC as pair of GPRS
+  2) Rx0 hardwired to zero
+  3) Rx for flags
+  4) No flags
+  5) Stack based CPU
 ```
